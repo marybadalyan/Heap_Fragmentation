@@ -1,89 +1,68 @@
 #include <iostream>
+#include <chrono>
 #include <vector>
 #include <cstdlib>
-#include <ctime>
-#include <chrono>
-#include <cstring> // for memset
-#include <format>   
+#include <random>
 
-int main() {
-    std::srand(static_cast<unsigned>(std::time(nullptr))); // Initial random seed
-
-    const size_t maxBlocks = 10'000'000;
-    const size_t minSize = 1024 * 1000;     
-    const size_t maxSize = 1024 * 1100;    
-    const size_t iter =  5'000;
-    std::vector<void*> heapBlocks;
-    heapBlocks.reserve(maxBlocks); // Avoid reallocs
-
-    std::cout << std::format("{:-<87}\n", "-");
-    
-    std::cout << std::format("| {:<50} | {:<30} |\n", "Description", "Operation Duration (ns)");
-    std::cout << std::format("|{:-<52}|{:-<32}|\n", "-", "-");
-
-    // Output for heap operation before fragmentation
-    std::cout << std::format("| {:<50} | {:<30} |\n", "Testing heap operations before fragmentation...", "");
-    auto start = std::chrono::high_resolution_clock::now();
-    void *arr1 = malloc(maxSize);  // Allocation of memory
-    if (arr1) {
-        std::memset(arr1, 0xA5, maxSize); // Touch memory to commit
+double test_operation(std::size_t size, const std::string& label, std::size_t trials) {
+    double total_duration = 0.0;
+    for (std::size_t i = 0; i < trials; ++i) {
+        auto start = std::chrono::high_resolution_clock::now();
+        void* ptr = std::malloc(size);
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+        total_duration += duration;
+        std::free(ptr);
     }
-    auto end = std::chrono::high_resolution_clock::now();
-    
-    std::chrono::duration<long long, std::nano> timeStamp = end - start;
-    auto duration1 = std::chrono::duration<double>(timeStamp).count();
-    std::cout << std::format("| {:<50} | {:<30.10f} |\n", "Heap operation before fragmentation", duration1);
+    double avg_duration = total_duration / trials;
+    std::cout << label << " average allocation time (" << trials << " trials): " 
+              << avg_duration << " microseconds" << std::endl;
+    return avg_duration;
+}
 
-    // Output for heap pressure test
-    std::cout << std::format("| {:<50} | {:<30} |\n", "Starting heap pressure test...", "");
-
-    start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < iter; ++i) {
-        int action = rand() % 5; // 0-3 = allocate, 4 = free
-
-        if (action != 4 || heapBlocks.empty()) {
-            size_t size = minSize + (rand() % (maxSize - minSize));
-            void* ptr = malloc(size);
-            if (ptr) {
-                std::memset(ptr, 0xA5, size); // Touch memory to commit
-                heapBlocks.push_back(ptr);
-            }
-        } else {
-            // Randomly free one of the blocks
-            int index = rand() % heapBlocks.size();
-            free(heapBlocks[index]);
-            heapBlocks[index] = heapBlocks.back();
-            heapBlocks.pop_back();
+std::vector<void*> simulate_heap_fragmentation(std::size_t num_blocks, std::size_t block_size) {
+    std::vector<void*> pointers(num_blocks, nullptr);
+    for (std::size_t i = 0; i < num_blocks; ++i) {
+        pointers[i] = std::malloc(block_size);
+        if (!pointers[i]) {
+            std::cerr << "Allocation failed at index " << i << std::endl;
+            return pointers;
         }
     }
-
-    end = std::chrono::high_resolution_clock::now();
-    timeStamp = end - start;
-    auto duration3 = std::chrono::duration<double>(timeStamp).count();
-    std::cout << std::format("| {:<50} | {:<30.10f} |\n", "Heap pressure loop completed", duration3);
-
-    std::cout << std::format("| {:<50} | {:<30} |\n", "Testing heap operations after fragmentation...", "");
-    start = std::chrono::high_resolution_clock::now();
-    void *arr2 = malloc(maxSize);  // Another allocation after fragmentation
-    if (arr2) {
-        std::memset(arr2, 0xA5, maxSize); 
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 1);
+    for (std::size_t i = 0; i < num_blocks; ++i) {
+        if (dis(gen)) {
+            std::free(pointers[i]);
+            pointers[i] = nullptr;
+        }
     }
-    
-    end = std::chrono::high_resolution_clock::now();
-    timeStamp = end - start;
-    auto duration2 = std::chrono::duration<double>(timeStamp).count();
-    std::cout << std::format("| {:<50} | {:<30.10f} |\n", "Heap operation after fragmentation", duration2);
-    std::cout << std::format("| {:<50} | {:<30.2f} |\n", "Heap operation Slowdown", duration2/duration1);
+    return pointers;
+}
 
-    // Free memory
-    free(arr1);
-    free(arr2);
-
-    // Free remaining blocks
-    for (void* ptr : heapBlocks) {
-        free(ptr);
+void cleanup(std::vector<void*>& pointers) {
+    for (std::size_t i = 0; i < pointers.size(); ++i) {
+        if (pointers[i]) {
+            std::free(pointers[i]);
+        }
     }
-    std::cout << std::format("{:-<87}\n", "-");
+}
+
+int main() {
+    const std::size_t test_block_size = 128;        // Closer to fragment size
+    const std::size_t num_blocks = 100000;           // Number of small blocks
+    const std::size_t fragment_block_size = 64;     // Size of each small block
+    const std::size_t trials = 100000;                // More trials for stability
+
+    test_operation(test_block_size, "Before fragmentation", trials);
+
+    std::cout << "Simulating heap fragmentation..." << std::endl;
+    std::vector<void*> pointers = simulate_heap_fragmentation(num_blocks, fragment_block_size);
+
+    test_operation(test_block_size, "After fragmentation", trials);
+
+    cleanup(pointers);
 
     return 0;
 }
