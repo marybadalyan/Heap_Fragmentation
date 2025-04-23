@@ -1,53 +1,55 @@
-#include <cstdlib>
-#include <vector>
 #include <iostream>
+#include <vector>
+#include <cstdlib>
 #include <chrono>
-#include <malloc.h>
-#include <cstring>   
-constexpr int allocCount = 1000;
-constexpr int blockSize = 1024;
-constexpr size_t largeSize = blockSize * allocCount / 2;
+#include <cstring> // for memset
+
+constexpr int allocCount = 10000;
+constexpr int blockSize = 128;
 constexpr int trials = 10;
+constexpr size_t largeAllocSize = allocCount * blockSize / 2;
 
-
+void* touch(void* ptr, size_t size) {
+    volatile char* p = static_cast<volatile char*>(ptr);
+    for (size_t i = 0; i < size; i += 64)
+        p[i] = 0;
+    return ptr;
+}
 
 double time_large_alloc(bool touch_memory = true) {
     using namespace std::chrono;
     auto start = high_resolution_clock::now();
-    void* ptr = malloc(largeSize);
+
+    void* ptr = malloc(largeAllocSize);
+    if (ptr && touch_memory) touch(ptr, largeAllocSize);
+
     auto end = high_resolution_clock::now();
-
-    if (ptr && touch_memory)
-        memset(ptr, 0, largeSize); 
-
     if (ptr) free(ptr);
     return duration<double, std::micro>(end - start).count();
 }
 
 int main() {
-
     std::vector<void*> blocks(allocCount);
 
-    double beforeTotal = 0;
+    // Measure allocation before fragmentation
+    double beforeTime = 0;
     for (int i = 0; i < trials; ++i)
-        beforeTotal += time_large_alloc();
+        beforeTime += time_large_alloc();
+    std::cout << "Avg time BEFORE fragmentation: " << beforeTime / trials << " µs\n";
 
-    std::cout << "Avg time BEFORE fragmentation: "
-              << beforeTotal / trials << " µs\n";
-
-    // Fragment the heap
+    // Fragmentation: Allocate varying sizes
     for (int i = 0; i < allocCount; ++i)
-        blocks[i] = malloc(blockSize + (i % 3) * 32);
+        blocks[i] = malloc(blockSize + (rand() % 128)); // varying sizes
     for (int i = 0; i < allocCount; i += 2)
-        free(blocks[i]);
+        free(blocks[i]); // free half — create fragmentation
 
-    double afterTotal = 0;
+    // Measure allocation after fragmentation
+    double afterTime = 0;
     for (int i = 0; i < trials; ++i)
-        afterTotal += time_large_alloc();
+        afterTime += time_large_alloc();
+    std::cout << "Avg time AFTER fragmentation:  " << afterTime / trials << " µs\n";
 
-    std::cout << "Avg time AFTER fragmentation:  "
-              << afterTotal / trials << " µs\n";
-
+    // Clean up remaining
     for (int i = 1; i < allocCount; i += 2)
         free(blocks[i]);
 
