@@ -10,8 +10,8 @@ int main() {
     std::srand(static_cast<unsigned>(std::time(nullptr))); // Initial random seed
 
     const size_t maxBlocks = 10'000'000;
-    const size_t minSize = 1024 * 1024;     
-    const size_t maxSize = 1024 * 100 * 1024;    
+    const size_t minSize = 1024;     
+    const size_t maxSize = 1024 * 1024;    
     const size_t iter =  5'000'0;
     std::vector<void*> heapBlocks;
     heapBlocks.reserve(maxBlocks); // Avoid reallocs
