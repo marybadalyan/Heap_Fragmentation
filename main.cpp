@@ -12,7 +12,7 @@ int main() {
     const size_t maxBlocks = 10'000'000;
     const size_t minSize = 1024 * 1000;     
     const size_t maxSize = 1024 * 1100;    
-    const size_t iter =  5'000'00;
+    const size_t iter =  5'000;
     std::vector<void*> heapBlocks;
     heapBlocks.reserve(maxBlocks); // Avoid reallocs
 
