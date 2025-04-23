@@ -50,8 +50,6 @@ This can occur due to alignment or block-size rounding.
 1. Reduced Available Memory
 Internal Fragmentation: This happens when an allocation is made, but the allocated block of memory is larger than what’s actually needed, leading to wasted space within the block.
 
-External Fragmentation: This occurs when free memory is available, but it is scattered in small blocks that cannot be used for larger allocations, even though there’s enough total free memory.
-
 As a result, even if the system has "enough" free memory in total, future allocations may fail if the memory is too fragmented to provide a large enough contiguous block.
 
 2. Increased Allocation Time
