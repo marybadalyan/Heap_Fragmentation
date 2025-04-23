@@ -82,12 +82,12 @@ Some systems use memory pools to manage heap memory more efficiently. Fragmentat
 | Description                                        | Operation Duration (ns)        |
 |----------------------------------------------------|--------------------------------|
 | Testing heap operations before fragmentation...    |                                |
-| Heap operation before fragmentation                | 0.0000610000                   |
+| Heap operation before fragmentation                | 0.0202407000                   |
 | Starting heap pressure test...                     |                                |
-| Total allocations (blocks)                         | 54                             |
-| Heap pressure loop completed                       | 0.0232030000                   |
+| Heap pressure loop completed                       | 11.9830615000                  |
 | Testing heap operations after fragmentation...     |                                |
-| Heap operation after fragmentation                 | 0.0000723000                   |
+| Heap operation after fragmentation                 | 0.0734613000                   |
+| Heap operation Slowdown                            | 3.63                           |
 ---------------------------------------------------------------------------------------
 
 ```
