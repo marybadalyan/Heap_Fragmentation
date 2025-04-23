@@ -78,10 +78,10 @@ jobs:
       shell: bash
       run: |
         # Set executable name based on OS
-        executable="Kernel_Space_Access"  # Start with base executable name
+        executable="main"  # Start with base executable name
         
         if [ "$RUNNER_OS" == "Windows" ]; then
-          executable="Kernel_Space_Access.exe"  # Add .exe for Windows
+          executable="main.exe"  # Add .exe for Windows
           # On Windows, we should ensure that we run in the correct directory
           executable_path="${{ github.workspace }}\\build\\${{ matrix.build_type }}\\$executable"  # Absolute path for Windows
         else
