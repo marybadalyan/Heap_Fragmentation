@@ -14,8 +14,38 @@ Happens when a block of memory is allocated, but not all of it is used.
 The leftover unused space inside the allocated block is wasted.
 This can occur due to alignment or block-size rounding.
 
-### How does memeory fragmentation result in other future heap operations
 
+
+## Dependencies
+
+- **C++20 compiler** (for `std::format` and modern features)
+- **Standard Template Library (STL)** (for `std::chrono`, etc.)
+
+## Build Instructions
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/username/Heap_Fragmentation
+   ```
+2. Navigate to the repository:
+   ```
+   cd Heap_Fragmentation
+   ```
+3. Generate build files:
+   ```
+   cmake -DCMAKE_BUILD_TYPE=Release -S . -B build
+   ```
+4. Build the project:
+   ```
+   cmake --build build --config Release
+   ```
+5. Run the executable from the build directory:
+   ```
+   ./build/Heap_Fragmentation
+   ```
+
+
+### How does memeory fragmentation result in other future heap operations
 
 1. Reduced Available Memory
 Internal Fragmentation: This happens when an allocation is made, but the allocated block of memory is larger than what’s actually needed, leading to wasted space within the block.
@@ -45,4 +75,24 @@ In managed languages with garbage collection, fragmentation can still play a rol
 8. Memory Pool Exhaustion
 Some systems use memory pools to manage heap memory more efficiently. Fragmentation can lead to pool exhaustion, where the pool can no longer provide the necessary memory for future requests. This can cause failures or require the system to fall back to slower memory allocation strategies.
 
+
+
+### Example Output
+```
+
+---------------------------------------------------------------------------------------
+| Description                                        | Operation Duration (ns)        |
+|----------------------------------------------------|--------------------------------|
+| Testing heap operations before fragmentation...    |                                |
+| Heap operation before fragmentation                | 0.0000610000                   |
+| Starting heap pressure test...                     |                                |
+| Total allocations (blocks)                         | 54                             |
+| Heap pressure loop completed                       | 0.0232030000                   |
+| Testing heap operations after fragmentation...     |                                |
+| Heap operation after fragmentation                 | 0.0000723000                   |
+---------------------------------------------------------------------------------------
+
+```
 In summary, heap fragmentation makes memory management less efficient, increases the likelihood of allocation failures, and can degrade performance. Effective heap management techniques, such as compaction, defragmentation, or using more sophisticated allocation strategies, are crucial to minimizing these effects.
+
+
