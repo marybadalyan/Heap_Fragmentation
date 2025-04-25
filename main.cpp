@@ -12,7 +12,7 @@
 
 constexpr int allocCount = 10000;
 constexpr int blockSize = 128;  
-constexpr int trials = 10;
+constexpr int trials = 100;
 constexpr size_t largeAllocSize = allocCount * blockSize * 10;
 
 #ifdef _WIN32
@@ -26,7 +26,7 @@ void* touch(void* ptr, size_t size) {
     return ptr;
 }
 
-double time_large_alloc(size_t alloc_size, bool touch_memory = false) { // if true memeory will be commited
+double time_large_alloc(size_t alloc_size, bool touch_memory = true) { // if true memeory will be commited
     using namespace std::chrono;
     auto start = high_resolution_clock::now();
     #ifdef _WIN32
