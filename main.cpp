@@ -75,7 +75,7 @@ int main() {
                 return 1;
             }
         }
-        for (int i = 0; i < allocCount; i += 3) {
+        for (int i = 0; i < allocCount; i += 4) {
             if (brk(orignials[i]) != 0) {
                 perror("brk (free)");
                 return 1;
@@ -94,7 +94,7 @@ int main() {
         for (int i = 1; i < allocCount; i += 3)
             HeapFree(heap, 0, blocks[i]);
     #else
-        for (int i = 1; i < allocCount; i += 3)
+        for (int i = 1; i < allocCount; i += 4)
             if (brk(orignials[i]) != 0) {
                 perror("brk (free)");
                 return 1;
