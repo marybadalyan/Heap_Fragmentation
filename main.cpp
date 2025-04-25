@@ -52,7 +52,7 @@ int main() {
     // Measure allocation before fragmentation (without touching memory)
     double beforeTime = 0;
     for (int i = 0; i < trials; ++i)
-        beforeTime += time_large_alloc(largeAllocSize, false);  // Don't touch memory before fragmentation
+        beforeTime += time_large_alloc(largeAllocSize);  // Don't touch memory before fragmentation
     std::cout << "Avg time BEFORE fragmentation (no touch): " << beforeTime / trials << " µs\n";
 
     // Fragmentation: Allocate varying sizes
@@ -84,7 +84,7 @@ int main() {
     // Measure allocation after fragmentation (with touching memory)
     double afterTime = 0;
     for (int i = 0; i < trials; ++i)
-        afterTime += time_large_alloc(largeAllocSize, true);  // Touch memory after fragmentation
+        afterTime += time_large_alloc(largeAllocSize);  // Touch memory after fragmentation
     std::cout << "Avg time AFTER fragmentation (touch): " << afterTime / trials << " µs\n";
 
     // Clean up remaining memory
