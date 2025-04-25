@@ -86,18 +86,8 @@ linux on the other hand  usees mmap that can take large allocated memeory and ma
 
 ### Example Output
 ```
-
----------------------------------------------------------------------------------------
-| Description                                        | Operation Duration (ns)        |
-|----------------------------------------------------|--------------------------------|
-| Testing heap operations before fragmentation...    |                                |
-| Heap operation before fragmentation                | 0.0202407000                   |
-| Starting heap pressure test...                     |                                |
-| Heap pressure loop completed                       | 11.9830615000                  |
-| Testing heap operations after fragmentation...     |                                |
-| Heap operation after fragmentation                 | 0.0734613000                   |
-| Heap operation Slowdown                            | 3.63                           |
----------------------------------------------------------------------------------------
+Avg time BEFORE fragmentation (no touch): 8.49 µs
+Avg time AFTER fragmentation (touch): 3915.93 µs
 
 ```
 In summary, heap fragmentation makes memory management less efficient, increases the likelihood of allocation failures, and can degrade performance. Effective heap management techniques, such as compaction, defragmentation, or using more sophisticated allocation strategies, are crucial to minimizing these effects.
