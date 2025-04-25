@@ -49,7 +49,7 @@ double time_large_alloc(bool touch_memory = true) {
 
 int main() {
     std::vector<void*> blocks(allocCount);
-
+    std::vector<void*> orignials(allocCount);
     // Measure allocation before fragmentation
     double beforeTime = 0;
     for (int i = 0; i < trials; ++i)
@@ -57,11 +57,31 @@ int main() {
     std::cout << "Avg time BEFORE fragmentation: " << beforeTime / trials << " µs\n";
 
     // Fragmentation: Allocate varying sizes
+    #ifdef _WIN32
     for (int i = 0; i < allocCount; ++i)
         blocks[i] = malloc(blockSize + (rand() % 128)); // varying sizes
     for (int i = 0; i < allocCount; i += 2)
         free(blocks[i]); // free half — create fragmentation
-
+    #else 
+        for(int i = 0; i < allocCount; ++i){
+            int random_num = blockSize + (rand() % 128);
+            void* original = sbrk(0);
+            orignials.push_back(original);
+            if (brk(static_cast<char*>(original) + random_num) == 0) {
+                touch(original, random_num);
+            } else {
+                perror("brk (alloc)");
+                return 1;
+            }
+        }
+        for(int i = 0; i < allocCount; i += 2)
+        {
+            if(brk(orignials[i]) != 0){
+                perror("brk (free)");
+                return 1;
+            }
+    }
+    #endif
     // Measure allocation after fragmentation
     double afterTime = 0;
     for (int i = 0; i < trials; ++i)
@@ -69,8 +89,17 @@ int main() {
     std::cout << "Avg time AFTER fragmentation:  " << afterTime / trials << " µs\n";
 
     // Clean up remaining
+    #ifdef _WIN32
     for (int i = 1; i < allocCount; i += 2)
         free(blocks[i]);
+    #else
+        for (int i = 1; i < allocCount; i += 2)
+        if(brk(orignials[i]) != 0){
+            perror("brk (free)");
+            return 1;
+        }
+    #endif
+
 
     return 0;
 }
