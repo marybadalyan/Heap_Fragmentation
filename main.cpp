@@ -10,10 +10,10 @@
 #endif
 #include <stdio.h>
 
-constexpr int allocCount = 10000;
+constexpr int allocCount = 100000;
 constexpr int blockSize = 128;  
-constexpr int trials = 50;
-constexpr size_t largeAllocSize = allocCount * blockSize * 30;
+constexpr int trials = 15;
+constexpr size_t largeAllocSize = allocCount * blockSize * 10;
 
 #ifdef _WIN32
     HANDLE heap = GetProcessHeap();  // Get the default process heap
@@ -61,7 +61,7 @@ int main() {
     #ifdef _WIN32
         for (int i = 0; i < allocCount; ++i)
             blocks[i] = HeapAlloc(heap, 0, blockSize + (rand() % 128)); // varying sizes
-        for (int i = 0; i < allocCount; i += 2)
+        for (int i = 0; i < allocCount; i += 3)
             HeapFree(heap, 0, blocks[i]); // free half — create fragmentation
     #else
         for (int i = 0; i < allocCount; ++i) {
@@ -75,7 +75,7 @@ int main() {
                 return 1;
             }
         }
-        for (int i = 0; i < allocCount; i += 2) {
+        for (int i = 0; i < allocCount; i += 3) {
             if (brk(orignials[i]) != 0) {
                 perror("brk (free)");
                 return 1;
@@ -91,10 +91,10 @@ int main() {
 
     // Clean up remaining memory
     #ifdef _WIN32
-        for (int i = 1; i < allocCount; i += 2)
+        for (int i = 1; i < allocCount; i += 3)
             HeapFree(heap, 0, blocks[i]);
     #else
-        for (int i = 1; i < allocCount; i += 2)
+        for (int i = 1; i < allocCount; i += 3)
             if (brk(orignials[i]) != 0) {
                 perror("brk (free)");
                 return 1;
