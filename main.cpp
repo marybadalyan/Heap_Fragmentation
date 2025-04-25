@@ -9,9 +9,9 @@
 #include <stdio.h>
 
 constexpr int allocCount = 10000;
-constexpr int blockSize = 128 ;  
+constexpr int blockSize = 128;  
 constexpr int trials = 10;
-constexpr size_t largeAllocSize = allocCount * blockSize / 2;
+constexpr size_t largeAllocSize = allocCount * blockSize * 10;
 
 void* touch(void* ptr, size_t size) {
     volatile char* p = static_cast<volatile char*>(ptr);
@@ -24,7 +24,7 @@ double time_large_alloc(bool touch_memory = true) {
     using namespace std::chrono;
     auto start = high_resolution_clock::now();
     #ifdef _WIN32
-        void* ptr = malloc(largeAllocSize);
+        void* ptr = malloc(largeAllocSize); //VirtualAlloc
         if (ptr && touch_memory) touch(ptr, largeAllocSize);
 
         auto end = high_resolution_clock::now();
