@@ -11,7 +11,7 @@
 #include <stdio.h>
 
 constexpr int allocCount = 10000;
-constexpr int blockSize = 128;
+constexpr int blockSize = 128;  
 constexpr int trials = 10;
 constexpr size_t largeAllocSize = allocCount * blockSize * 10;
 
@@ -26,12 +26,13 @@ void* touch(void* ptr, size_t size) {
     return ptr;
 }
 
-double time_large_alloc(size_t alloc_size, bool touch_memory = true) {
+double time_large_alloc(size_t alloc_size, bool touch_memory = false) { // if true memeory will be commited
     using namespace std::chrono;
     auto start = high_resolution_clock::now();
     #ifdef _WIN32
         void* ptr = HeapAlloc(heap, 0, alloc_size);
         if (ptr && touch_memory) touch(ptr, alloc_size);
+        if (ptr) HeapFree(heap, 0, ptr);  // Freeing with HeapFree for Windows
     #else
         void* original = sbrk(0);
         if (brk(static_cast<char*>(original) + alloc_size) == 0) {
@@ -40,6 +41,7 @@ double time_large_alloc(size_t alloc_size, bool touch_memory = true) {
             perror("brk (alloc)");
             return 1;
         }
+        // Note: For Linux brk, we don't need to explicitly "free" after the allocation.
     #endif
     auto end = high_resolution_clock::now();
     return duration<double, std::micro>(end - start).count();
@@ -49,11 +51,11 @@ int main() {
     std::vector<void*> blocks(allocCount);
     std::vector<void*> orignials(allocCount);
 
-    // Measure allocation before fragmentation (without touching memory)
+    // Measure allocation before fragmentation (with memory touch)
     double beforeTime = 0;
     for (int i = 0; i < trials; ++i)
-        beforeTime += time_large_alloc(largeAllocSize);  // Don't touch memory before fragmentation
-    std::cout << "Avg time BEFORE fragmentation (no touch): " << beforeTime / trials << " µs\n";
+        beforeTime += time_large_alloc(largeAllocSize, true);  // Touch memory before fragmentation
+    std::cout << "Avg time BEFORE fragmentation (touch): " << beforeTime / trials << " µs\n";
 
     // Fragmentation: Allocate varying sizes
     #ifdef _WIN32
@@ -81,10 +83,10 @@ int main() {
         }
     #endif
 
-    // Measure allocation after fragmentation (with touching memory)
+    // Measure allocation after fragmentation (with memory touch)
     double afterTime = 0;
     for (int i = 0; i < trials; ++i)
-        afterTime += time_large_alloc(largeAllocSize);  // Touch memory after fragmentation
+        afterTime += time_large_alloc(largeAllocSize, true);  // Touch memory after fragmentation
     std::cout << "Avg time AFTER fragmentation (touch): " << afterTime / trials << " µs\n";
 
     // Clean up remaining memory
