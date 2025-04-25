@@ -12,8 +12,8 @@
 
 constexpr int allocCount = 10000;
 constexpr int blockSize = 128;  
-constexpr int trials = 100;
-constexpr size_t largeAllocSize = allocCount * blockSize * 10;
+constexpr int trials = 50;
+constexpr size_t largeAllocSize = allocCount * blockSize * 30;
 
 #ifdef _WIN32
     HANDLE heap = GetProcessHeap();  // Get the default process heap
