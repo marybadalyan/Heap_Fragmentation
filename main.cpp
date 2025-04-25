@@ -5,15 +5,19 @@
 #include <cstring> // for memset
 #ifndef _WIN32
     #include <unistd.h>
-#else 
+#else
     #include <windows.h>
 #endif
 #include <stdio.h>
 
 constexpr int allocCount = 10000;
-constexpr int blockSize = 128;  
+constexpr int blockSize = 128;
 constexpr int trials = 10;
 constexpr size_t largeAllocSize = allocCount * blockSize * 10;
+
+#ifdef _WIN32
+    HANDLE heap = GetProcessHeap();  // Get the default process heap
+#endif
 
 void* touch(void* ptr, size_t size) {
     volatile char* p = static_cast<volatile char*>(ptr);
@@ -22,30 +26,22 @@ void* touch(void* ptr, size_t size) {
     return ptr;
 }
 
-double time_large_alloc(HANDLE heap,bool touch_memory = true) {
+double time_large_alloc(size_t alloc_size, bool touch_memory = true) {
     using namespace std::chrono;
     auto start = high_resolution_clock::now();
     #ifdef _WIN32
-        void* ptr = HeapAlloc(heap, 0, largeAllocSize); //VirtualAlloc
-        if (ptr && touch_memory) touch(ptr, largeAllocSize);
-
-        auto end = high_resolution_clock::now();
-        if (ptr) free(ptr);
+        void* ptr = HeapAlloc(heap, 0, alloc_size);
+        if (ptr && touch_memory) touch(ptr, alloc_size);
     #else
         void* original = sbrk(0);
-        if (brk(static_cast<char*>(original) + largeAllocSize) == 0) {
-            if (touch_memory) touch(original, largeAllocSize);
+        if (brk(static_cast<char*>(original) + alloc_size) == 0) {
+            if (touch_memory) touch(original, alloc_size);
         } else {
             perror("brk (alloc)");
             return 1;
         }
-        auto end = high_resolution_clock::now();
-        if (brk(original) != 0) {
-            perror("brk (free)");
-            return 1;
-        }
-
-#endif
+    #endif
+    auto end = high_resolution_clock::now();
     return duration<double, std::micro>(end - start).count();
 }
 
@@ -53,25 +49,20 @@ int main() {
     std::vector<void*> blocks(allocCount);
     std::vector<void*> orignials(allocCount);
 
-    HANDLE heap = GetProcessHeap();  // Get the default process heap
-    
-
-
     // Measure allocation before fragmentation
     double beforeTime = 0;
     for (int i = 0; i < trials; ++i)
-        beforeTime += time_large_alloc(heap);
+        beforeTime += time_large_alloc(largeAllocSize);
     std::cout << "Avg time BEFORE fragmentation: " << beforeTime / trials << " µs\n";
 
-    
     // Fragmentation: Allocate varying sizes
     #ifdef _WIN32
-    for (int i = 0; i < allocCount; ++i)
-        blocks[i] = HeapAlloc(heap,0,blockSize + (rand() % 128)); // varying sizes
-    for (int i = 0; i < allocCount; i += 2)
-        free(blocks[i]); // free half — create fragmentation
-    #else 
-        for(int i = 0; i < allocCount; ++i){
+        for (int i = 0; i < allocCount; ++i)
+            blocks[i] = HeapAlloc(heap, 0, blockSize + (rand() % 128)); // varying sizes
+        for (int i = 0; i < allocCount; i += 2)
+            HeapFree(heap, 0, blocks[i]); // free half — create fragmentation
+    #else
+        for (int i = 0; i < allocCount; ++i) {
             int random_num = blockSize + (rand() % 128);
             void* original = sbrk(0);
             orignials.push_back(original);
@@ -82,32 +73,31 @@ int main() {
                 return 1;
             }
         }
-        for(int i = 0; i < allocCount; i += 2)
-        {
-            if(brk(orignials[i]) != 0){
+        for (int i = 0; i < allocCount; i += 2) {
+            if (brk(orignials[i]) != 0) {
                 perror("brk (free)");
                 return 1;
             }
-    }
-    #endif
-    // Measure allocation after fragmentation
-    double afterTime = 0;
-    for (int i = 0; i < trials; ++i)
-        afterTime += time_large_alloc(heap);
-    std::cout << "Avg time AFTER fragmentation:  " << afterTime / trials << " µs\n";
-
-    // Clean up remaining
-    #ifdef _WIN32
-    for (int i = 1; i < allocCount; i += 2)
-        free(blocks[i]);
-    #else
-        for (int i = 1; i < allocCount; i += 2)
-        if(brk(orignials[i]) != 0){
-            perror("brk (free)");
-            return 1;
         }
     #endif
 
+    // Measure allocation after fragmentation
+    double afterTime = 0;
+    for (int i = 0; i < trials; ++i)
+        afterTime += time_large_alloc(largeAllocSize);
+    std::cout << "Avg time AFTER fragmentation: " << afterTime / trials << " µs\n";
+
+    // Clean up remaining memory
+    #ifdef _WIN32
+        for (int i = 1; i < allocCount; i += 2)
+            HeapFree(heap, 0, blocks[i]);
+    #else
+        for (int i = 1; i < allocCount; i += 2)
+            if (brk(orignials[i]) != 0) {
+                perror("brk (free)");
+                return 1;
+            }
+    #endif
 
     return 0;
 }
