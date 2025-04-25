@@ -73,7 +73,10 @@ In managed languages with garbage collection, fragmentation can still play a rol
 8. Memory Pool Exhaustion
 Some systems use memory pools to manage heap memory more efficiently. Fragmentation can lead to pool exhaustion, where the pool can no longer provide the necessary memory for future requests. This can cause failures or require the system to fall back to slower memory allocation strategies.
 
+Windows  uses HeapAlloc API  for
+Smalle/medium  blocks go,and  VirtualAlloc for large regions
 
+linux on the other hand  usees mmap that can take large allocated memeory and map it to a non heap virtual memory
 
 ### Example Output
 ```
