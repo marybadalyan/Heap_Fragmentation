@@ -2,6 +2,7 @@
 #include <vector>
 #include <cstdlib>
 #include <chrono>
+#include <windows.h>
 #include <cstring> // for memset
 #ifndef _WIN32
     #include <unistd.h>
@@ -20,11 +21,11 @@ void* touch(void* ptr, size_t size) {
     return ptr;
 }
 
-double time_large_alloc(bool touch_memory = true) {
+double time_large_alloc(HANDLE heap,bool touch_memory = true) {
     using namespace std::chrono;
     auto start = high_resolution_clock::now();
     #ifdef _WIN32
-        void* ptr = malloc(largeAllocSize); //VirtualAlloc
+        void* ptr = HeapAlloc(heap, 0, largeAllocSize); //VirtualAlloc
         if (ptr && touch_memory) touch(ptr, largeAllocSize);
 
         auto end = high_resolution_clock::now();
@@ -50,16 +51,22 @@ double time_large_alloc(bool touch_memory = true) {
 int main() {
     std::vector<void*> blocks(allocCount);
     std::vector<void*> orignials(allocCount);
+
+    HANDLE heap = GetProcessHeap();  // Get the default process heap
+    
+
+
     // Measure allocation before fragmentation
     double beforeTime = 0;
     for (int i = 0; i < trials; ++i)
-        beforeTime += time_large_alloc();
+        beforeTime += time_large_alloc(heap);
     std::cout << "Avg time BEFORE fragmentation: " << beforeTime / trials << " µs\n";
 
+    
     // Fragmentation: Allocate varying sizes
     #ifdef _WIN32
     for (int i = 0; i < allocCount; ++i)
-        blocks[i] = malloc(blockSize + (rand() % 128)); // varying sizes
+        blocks[i] = HeapAlloc(heap,0,blockSize + (rand() % 128)); // varying sizes
     for (int i = 0; i < allocCount; i += 2)
         free(blocks[i]); // free half — create fragmentation
     #else 
@@ -85,7 +92,7 @@ int main() {
     // Measure allocation after fragmentation
     double afterTime = 0;
     for (int i = 0; i < trials; ++i)
-        afterTime += time_large_alloc();
+        afterTime += time_large_alloc(heap);
     std::cout << "Avg time AFTER fragmentation:  " << afterTime / trials << " µs\n";
 
     // Clean up remaining

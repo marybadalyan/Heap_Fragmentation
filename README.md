@@ -76,6 +76,12 @@ Some systems use memory pools to manage heap memory more efficiently. Fragmentat
 Windows  uses HeapAlloc API  for
 Smalle/medium  blocks go,and  VirtualAlloc for large regions
 
+
+Windows itself does not automatically create custom heaps so the risk of bypasing
+
+HANDLE heap = GetProcessHeap();  // Get the default process heap
+void* ptr = HeapAlloc(heap, 0, largeSize);  // Allocates large memory block from the heap
+
 linux on the other hand  usees mmap that can take large allocated memeory and map it to a non heap virtual memory
 
 ### Example Output
